@@ -46,7 +46,7 @@ port="${port}"                          # 选填，转换的IPv4端口，本处�
 
 复制到luck插件stun的自定义脚本触发内部。
 
-![image](assets/u8z6kyu.png)
+![image](https://github.com/pengfdm/ip4p-updata-for-cloudflare/blob/main/pic/u8z6kyu.png)
 
 使用支持ip4的软件访问该域名即可。WireGuard使用时候，dns需要写Cloudflare的DNS解析域名。
 
