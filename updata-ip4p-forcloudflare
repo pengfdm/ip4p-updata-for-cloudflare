@@ -1,0 +1,54 @@
+#!/bin/bash
+#
+# IP4P → IPv6 自动更新 Cloudflare AAAA 记录脚本
+# ----------------------------------------------
+# 根据自定义格式：
+#   2001:0000:0000:0000:0000:XXXX:YYYY:ZZZZ
+#   XXXX = 端口(16进制)
+#   YYYY = IPv4 高 16 位(16进制)
+#   ZZZZ = IPv4 低 16 位(16进制)
+#
+###############################
+# 需要你填写的变量
+###############################
+
+API_TOKEN="你的 Cloudflare API Token"     # 必填，       
+ZONE_ID="你的 Zone ID"                    # 必填，     
+RECORD_ID="你的 DNS 记录 ID"              # 必填，      
+DOMAIN_NAME="需要解析的域名"              # 必填， 
+
+ip="${ip}"                              # 选填，转换的IPv4地址，本处采用lucky插件的stun变量       
+port="${port}"                          # 选填，转换的IPv4端口，本处采用lucky插件的stun变量       
+
+#############################################
+# 以下无需修改 — 自动构造 IP4P IPv6 地址
+#############################################
+
+PORT_HEX=$(printf "%04x" "$port")
+
+IFS='.' read -r o1 o2 o3 o4 <<< "$ip"
+ip_int=$(( (o1 << 24) + (o2 << 16) + (o3 << 8) + o4 ))
+
+IP_HIGH=$(( (ip_int >> 16) & 0xFFFF ))
+IP_LOW=$(( ip_int & 0xFFFF ))
+
+IP_HIGH_HEX=$(printf "%04x" "$IP_HIGH")
+IP_LOW_HEX=$(printf "%04x" "$IP_LOW")
+
+IPV6_ADDR="2001:0000:0000:0000:0000:${PORT_HEX}:${IP_HIGH_HEX}:${IP_LOW_HEX}"
+
+echo "生成的 IP4P IPv6 地址为: $IPV6_ADDR"
+
+response=$(curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records/${RECORD_ID}" \
+  -H "Authorization: Bearer ${API_TOKEN}" \
+  -H "Content-Type: application/json" \
+  --data "{
+    \"type\": \"AAAA\",
+    \"name\": \"${DOMAIN_NAME}\",
+    \"content\": \"${IPV6_ADDR}\",
+    \"ttl\": 1,
+    \"proxied\": false
+  }")
+
+echo "Cloudflare API 返回："
+echo "$response"
